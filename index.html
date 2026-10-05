@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Mega Dark Dome & Ivory Obelisk Pilgrimage XR</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js & Controls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #010204;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      user-select: none;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body class="relative text-slate-100">
+
+  <header class="absolute top-4 left-4 z-30 pointer-events-none flex flex-col gap-2">
+    <div class="bg-black/85 backdrop-blur-md border border-amber-500/40 p-4 rounded-xl shadow-2xl max-w-sm pointer-events-auto transition-all">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+        <h1 class="text-sm font-bold tracking-wide uppercase text-amber-200">신성한 아이보리 오벨리스크 성소 XR</h1>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed mb-3">
+        성소를 지켜보는 <strong>제1 관찰자</strong>와 탑돌이 광경 전체를 <strong>제2 관찰자(사용자)</strong> 시점에서 썸스틱으로 자유롭게 조망합니다.
+      </p>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col gap-2 text-xs">
+        <label class="cursor-pointer bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-medium py-2.5 px-3 rounded-lg text-center shadow-lg transition flex items-center justify-center gap-1.5">
+          <span>📁 내 MP4/실제 비디오 전사 업로드</span>
+          <input type="file" id="video-input" accept="video/mp4,video/webm,video/quicktime" class="hidden">
+        </label>
+        
+        <button id="toggle-screen-btn" class="bg-slate-800/90 hover:bg-slate-700 text-amber-200 border border-amber-500/50 px-3 py-2 rounded-lg font-medium transition text-left flex items-center justify-between">
+          <span>🎬 배경 거대 시네마 곡면 스크린</span>
+          <span id="screen-status-badge" class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/30 text-emerald-300 border border-emerald-500/50">ON</span>
+        </button>
+
+        <!-- 슈팅 게임 상태 HUD 및 PC 발사 버튼 -->
+        <div class="bg-amber-950/40 border border-amber-500/40 rounded-lg p-2 flex flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-amber-300 flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+              💥 오벨리스크 정밀 파쇄 시스템
+            </span>
+            <span id="score-counter" class="text-[11px] font-bold text-amber-300">내구도: 100% | 파쇄: 0/48</span>
+          </div>
+          <button id="manual-shoot-btn" class="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-slate-900 font-bold py-1.5 px-2 rounded text-[11px] shadow transition active:scale-95 text-center">
+            🎯 오벨리스크 레이저 포격 (PC: Space / 클릭)
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-1.5 pt-1">
+          <button id="cam-preset-1" class="bg-slate-800/80 hover:bg-amber-600/50 text-slate-200 border border-slate-700 px-2 py-1.5 rounded text-[11px] transition text-center">
+            🔭 제1관찰자 뒤 조망
+          </button>
+          <button id="cam-preset-2" class="bg-slate-800/80 hover:bg-amber-600/50 text-slate-200 border border-slate-700 px-2 py-1.5 rounded text-[11px] transition text-center">
+            🪐 돔 고공 원경 (Top)
+          </button>
+        </div>
+      </div>
+
+      <!-- VR Controls Guide -->
+      <div class="mt-3 pt-3 border-t border-slate-700/60 text-xs text-slate-300 space-y-1">
+        <div class="flex items-center gap-1.5 text-amber-300 font-semibold">
+          <span>🎮 제2 관찰자(사용자) 조작 안내:</span>
+        </div>
+        <p class="text-[11px] text-slate-400 leading-normal">
+          • <span class="text-amber-200">VR 좌/우 트리거 (또는 화면 클릭/스페이스바)</span>: 제1관찰자가 중앙 오벨리스크를 타격 → <strong>불규칙한 암석 파편 박살 & 떨어진 단면의 파열된 벽면 노출 및 최종 붕괴</strong><br>
+          • <span class="text-amber-200">왼손 썸스틱</span>: 앞/뒤 밀면 근접/원경 (전진/후진), 좌/우 이동<br>
+          • <span class="text-amber-200">오른손 썸스틱</span>: 상/하 고도 조절(높이), 좌/우 시점 선회(회전)<br>
+          • <span class="text-amber-200">PC / 모바일</span>: W·S(근접/원경), A·D(좌우), R·F(고도), Q·E(회전)
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Video Element for Texture Mapping -->
+  <video id="video-source" loop muted playsinline crossOrigin="anonymous" style="display:none;"></video>
+
+  <script>
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x010204);
+    scene.fog = new THREE.FogExp2(0x010204, 0.007);
+
+    // Camera Rig 시스템: 제2 관찰자(사용자)의 조망 프레임
+    // 제1 관찰자가 서서 성소를 바라보는 모습과 오벨리스크 전체가 한눈에 들어오는 원경 뒤편 (Z: 38m, Y: 6.8m)
+    const cameraRig = new THREE.Group();
+    cameraRig.position.set(0, 6.8, 38);
+    scene.add(cameraRig);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 800);
+    cameraRig.add(camera);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
+    renderer.xr.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    // PC/모바일 환경용 OrbitControls
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 + 0.03;
+    controls.minDistance = 2;
+    controls.maxDistance = 140;
+    controls.target.set(0, 5, 12);
+    const bounceLight = new THREE.DirectionalLight(0x7090b0, 0.6);
+    bounceLight.position.set(-25, 10, -25);
+    scene.add(bounceLight);
+
+    // 오벨리스크 및 성소 전용 집중 조명 (어두운 돔 안에서도 선명한 아이보리 대리석 톤 확보)
+    const obeliskSpot1 = new THREE.DirectionalLight(0xfff9ef, 2.5);
+    obeliskSpot1.position.set(22, 36, 32);
+    obeliskSpot1.target.position.set(0, 18, 0);
+    scene.add(obeliskSpot1);
+    scene.add(obeliskSpot1.target);
+
+    const obeliskSpot2 = new THREE.DirectionalLight(0xe5f2ff, 1.8);
+    obeliskSpot2.position.set(-25, 30, 20);
+    obeliskSpot2.target.position.set(0, 18, 0);
+    scene.add(obeliskSpot2);
+    scene.add(obeliskSpot2.target);
+
+    const sanctuaryAmbient = new THREE.AmbientLight(0xfff7ee, 1.2);
+    scene.add(sanctuaryAmbient);
+
+    // 관찰자를 포근히 감싸는 웅장한 거대 암흑 돔 (안정적인 암실 챔버 유지)
+    const domeRadius = 85;
+    const domeGeo = new THREE.SphereGeometry(domeRadius, 48, 32, 0, Math.PI * 2, 0, Math.PI * 0.52);
+    domeGeo.scale(-1, 1, 1);
+    const domeMat = new THREE.MeshStandardMaterial({
+      color: 0x05070e,
+      roughness: 0.94,
+      metalness: 0.1,
+      side: THREE.BackSide
+    });
+    const darkDome = new THREE.Mesh(domeGeo, domeMat);
+    scene.add(darkDome);
+
+    // 돔 하단 흑요석 바닥
+    const domeFloorGeo = new THREE.CircleGeometry(domeRadius, 64);
+    const domeFloorMat = new THREE.MeshStandardMaterial({
+      color: 0x04060b,
+      roughness: 0.85,
+      metalness: 0.15
+    });
+    const domeFloor = new THREE.Mesh(domeFloorGeo, domeFloorMat);
+    domeFloor.rotation.x = -Math.PI / 2;
+    domeFloor.position.y = -0.05;
+    scene.add(domeFloor);
+
+    // 사실적인 아이보리 천연 대리석 텍스처
+    function createIvoryMarbleTexture() {
+      const cvs = document.createElement('canvas');
+      cvs.width = 1024;
+      cvs.height = 1024;
+      const ctx = cvs.getContext('2d');
+      // 따뜻하고 노란빛이 도는 풍부한 내추럴 웜 아이보리 베이스
+      ctx.fillStyle = '#faefd6';
+      ctx.fillRect(0, 0, 1024, 1024);
+
+      for (let i = 0; i < 45000; i++) {
+        const x = Math.random() * 1024;
+        const y = Math.random() * 1024;
+        ctx.fillStyle = `rgba(200, 175, 130, ${Math.random() * 0.08})`;
+        ctx.fillRect(x, y, 2 + Math.random() * 3, 1 + Math.random() * 2);
+      }
+
+      ctx.lineWidth = 3;
+      for (let j = 0; j < 16; j++) {
+        ctx.strokeStyle = `rgba(185, 150, 105, ${0.06 + Math.random() * 0.07})`;
+        ctx.beginPath();
+        let cy = Math.random() * 1024;
+        ctx.moveTo(0, cy);
+        for (let x = 0; x < 1024; x += 80) {
+          cy += (Math.random() - 0.5) * 55;
+          ctx.lineTo(x, cy);
+        }
+        ctx.stroke();
+      }
+      const tex = new THREE.CanvasTexture(cvs);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+    const ivoryMarbleTex = createIvoryMarbleTexture();
+
+    // 성소 광장 바닥 텍스처 (원래의 차분하고 고풍스러운 다크 슬레이트 석재 톤으로 복귀)
+    function createPlazaTexture() {
+      const cvs = document.createElement('canvas');
+      cvs.width = 1024;
+      cvs.height = 1024;
+      const ctx = cvs.getContext('2d');
+      ctx.fillStyle = '#1c212d'; // 차분하고 어두운 석재 베이스
+      ctx.fillRect(0, 0, 1024, 1024);
+
+      // 미세 석재 질감
+      for (let i = 0; i < 28000; i++) {
+        const x = Math.random() * 1024;
+        const y = Math.random() * 1024;
+        ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.035})`;
+        ctx.fillRect(x, y, 2 + Math.random() * 2, 2 + Math.random() * 2);
+      }
+
+      ctx.strokeStyle = '#2d3546';
+      ctx.lineWidth = 4;
+      const step = 64;
+      for (let x = 0; x <= 1024; x += step) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 1024); ctx.stroke();
+      }
+      for (let y = 0; y <= 1024; y += step) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1024, y); ctx.stroke();
+      }
+      const tex = new THREE.CanvasTexture(cvs);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(8, 8);
+      return tex;
+    }
+    const plazaFloorTex = createPlazaTexture();
+
+    const sanctuaryGroup = new THREE.Group();
+    scene.add(sanctuaryGroup);
+
+    // 원형 성소 제단 단상 (사람들이 탑돌이하는 대형 원판)
+    const stageRadius = 22;
+    const stageGeo = new THREE.CylinderGeometry(stageRadius, stageRadius + 1.2, 0.8, 64);
+    const stageMat = new THREE.MeshStandardMaterial({
+      map: plazaFloorTex,
+      color: 0x222938, // 원래의 웅장하고 깊이 있는 다크 석재 톤
+      roughness: 0.72,
+      metalness: 0.15
+    });
+    const stageMesh = new THREE.Mesh(stageGeo, stageMat);
+    stageMesh.position.y = 0.4;
+    stageMesh.receiveShadow = true;
+    sanctuaryGroup.add(stageMesh);
+
+    // 금빛 테두리 링
+    const edgeRingGeo = new THREE.TorusGeometry(stageRadius + 0.1, 0.25, 16, 96);
+    const edgeRingMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.85, roughness: 0.25 });
+    const edgeRing = new THREE.Mesh(edgeRingGeo, edgeRingMat);
+    edgeRing.rotation.x = Math.PI / 2;
+    edgeRing.position.y = 0.8;
+    sanctuaryGroup.add(edgeRing);
+
+    // 오벨리스크 기단
+    const baseMat = new THREE.MeshStandardMaterial({
+      map: ivoryMarbleTex,
+      color: 0xfffaf2,
+      roughness: 0.35,
+      metalness: 0.05
+    });
+    const pedestal1 = new THREE.Mesh(new THREE.BoxGeometry(9.0, 1.2, 9.0), baseMat);
+    pedestal1.position.y = 1.4;
+    sanctuaryGroup.add(pedestal1);
+
+    const pedestal2 = new THREE.Mesh(new THREE.BoxGeometry(7.2, 1.0, 7.2), baseMat);
+    pedestal2.position.y = 2.5;
+    sanctuaryGroup.add(pedestal2);
+
+    // 하얀/아이보리색 거대 오벨리스크 (높이 36.5m, 볼텍스 끝까지 상향 및 볼륨 확장)
+    const obeliskHeight = 36.5;
+    const obeliskBottomWidth = 4.8;
+    const obeliskTopWidth = 2.6;
+    const obeliskBaseY = 3.0;
+
+    // 파편 내부 텍스처: 밝고 화사한 아이보리 천연 대리석 암석 단면
+    function createFracturedRockTexture() {
+      const cvs = document.createElement('canvas');
+      cvs.width = 512;
+      cvs.height = 512;
+      const ctx = cvs.getContext('2d');
+      ctx.fillStyle = '#f8ebd0'; // 따뜻한 옐로우 아이보리 베이스
+      ctx.fillRect(0, 0, 512, 512);
+
+      // 밝은 암석 결 및 아이보리 파쇄 단면 음영
+      for (let i = 0; i < 35000; i++) {
+        const x = Math.random() * 512;
+        const y = Math.random() * 512;
+        const brightness = 215 + Math.floor(Math.random() * 35);
+        ctx.fillStyle = `rgba(${brightness}, ${brightness - 18}, ${brightness - 55}, ${Math.random() * 0.28})`;
+        ctx.fillRect(x, y, 2 + Math.random() * 4, 2 + Math.random() * 4);
+      }
+      ctx.lineWidth = 2.0;
+      for (let j = 0; j < 25; j++) {
+        ctx.strokeStyle = 'rgba(195, 165, 120, 0.48)';
+        ctx.beginPath();
+        let fx = Math.random() * 512, fy = Math.random() * 512;
+        ctx.moveTo(fx, fy);
+        for (let k = 0; k < 6; k++) {
+          fx += (Math.random() - 0.5) * 60;
+          fy += (Math.random() - 0.5) * 60;
+          ctx.lineTo(fx, fy);
+        }
+        ctx.stroke();
+      }
+      const tex = new THREE.CanvasTexture(cvs);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+    const fracturedRockTex = createFracturedRockTexture();
+
+    // 1. 아이보리 외벽이 뜯겨 나가면 비로소 드러나는 '완전한 칠흑빛 까만 기둥'
+    const blackPillarMat = new THREE.MeshStandardMaterial({
+      color: 0x05070c,
+      roughness: 0.18,
+      metalness: 0.92
+    });
+
+    const innerCoreGeo = new THREE.CylinderGeometry(
+      (obeliskTopWidth * 0.44) / 2,
+      (obeliskBottomWidth * 0.44) / 2,
+      obeliskHeight * 0.96,
+      24
+    );
+    const innerBlackPillar = new THREE.Mesh(innerCoreGeo, blackPillarMat);
+    innerBlackPillar.position.y = obeliskBaseY + obeliskHeight / 2;
+    // 게임 시작 전에는 외벽 안쪽에 완전히 숨겨져 외부에서 일체 보이지 않도록 기본 숨김
+    innerBlackPillar.visible = false;
+    sanctuaryGroup.add(innerBlackPillar);
+
+    // 2. 오벨리스크 외벽을 100% 빈틈없이 감싸는 48개의 불규칙 다면체 파편 (Irregular Stone Chunks)
+    const obeliskChunks = [];
+    const chunkGroup = new THREE.Group();
+    sanctuaryGroup.add(chunkGroup);
+
+    const chunkLayers = 8;
+    const chunksPerLayer = 6;
+    const layerHeight = obeliskHeight / chunkLayers;
+
+    const outerChunkMat = new THREE.MeshStandardMaterial({
+      map: ivoryMarbleTex,
+      color: 0xfff6dd, // 너무 하얗지 않고 온화한 노란빛이 감도는 웜 아이보리
+      emissive: 0x2e2413, // 따뜻한 골든 앰버 톤의 자체 발광
+      roughness: 0.26,
+      metalness: 0.05,
+      side: THREE.DoubleSide
+    });
+
+    const brokenEdgeMat = new THREE.MeshStandardMaterial({
+      map: fracturedRockTex,
+      color: 0xfceecd,
+      emissive: 0x2a1f10,
+      roughness: 0.85,
+      metalness: 0.05,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 1.0
+    });
+
+    for (let layer = 0; layer < chunkLayers; layer++) {
+      const y0 = obeliskBaseY + layer * layerHeight;
+      const y1 = y0 + layerHeight;
+      const t0 = layer / chunkLayers;
+      const t1 = (layer + 1) / chunkLayers;
+
+      const rBottom = (obeliskBottomWidth * (1 - t0) + obeliskTopWidth * t0) / 2;
+      const rTop = (obeliskBottomWidth * (1 - t1) + obeliskTopWidth * t1) / 2;
+
+      for (let c = 0; c < chunksPerLayer; c++) {
+        // 청크 간 틈새 없이 완벽 밀폐를 위한 겹침(overlap) 처리
+        const angleOverlap = 0.045;
+        const angleStart = (c / chunksPerLayer) * Math.PI * 2 - angleOverlap;
+        const angleEnd = ((c + 1) / chunksPerLayer) * Math.PI * 2 + angleOverlap;
+        const angleMid = (angleStart + angleEnd) / 2;
+
+        // 외벽이 까만 기둥을 완벽히 차폐하도록 충분한 두께(1.05m) 부여
+        const thickness = 1.05;
+
+        const b_out_1 = new THREE.Vector3(Math.cos(angleStart) * rBottom, -layerHeight / 2, Math.sin(angleStart) * rBottom);
+        const b_out_2 = new THREE.Vector3(Math.cos(angleEnd) * rBottom, -layerHeight / 2, Math.sin(angleEnd) * rBottom);
+        const b_in_1 = new THREE.Vector3(Math.cos(angleStart) * (rBottom - thickness), -layerHeight / 2, Math.sin(angleStart) * (rBottom - thickness));
+        const b_in_2 = new THREE.Vector3(Math.cos(angleEnd) * (rBottom - thickness), -layerHeight / 2, Math.sin(angleEnd) * (rBottom - thickness));
+
+        const t_out_1 = new THREE.Vector3(Math.cos(angleStart) * rTop, layerHeight / 2, Math.sin(angleStart) * rTop);
+        const t_out_2 = new THREE.Vector3(Math.cos(angleEnd) * rTop, layerHeight / 2, Math.sin(angleEnd) * rTop);
+        const t_in_1 = new THREE.Vector3(Math.cos(angleStart) * (rTop - thickness), layerHeight / 2, Math.sin(angleStart) * (rTop - thickness));
+        const t_in_2 = new THREE.Vector3(Math.cos(angleEnd) * (rTop - thickness), layerHeight / 2, Math.sin(angleEnd) * (rTop - thickness));
+
+        const vertices = [];
+        function addQuad(p1, p2, p3, p4) {
+          vertices.push(
+            p1.x, p1.y, p1.z, p2.x, p2.y, p2.z, p3.x, p3.y, p3.z,
+            p1.x, p1.y, p1.z, p3.x, p3.y, p3.z, p4.x, p4.y, p4.z
+          );
+        }
+        // 외벽 정면 쿼드: 법선이 바깥쪽을 향하도록 반시계 방향 와인딩
+        addQuad(b_out_2, b_out_1, t_out_1, t_out_2);
+        // 내벽 쿼드
+        addQuad(b_in_1, b_in_2, t_in_2, t_in_1);
+        // 좌우 측면 쿼드
+        addQuad(b_in_2, b_out_2, t_out_2, t_in_2);
+        addQuad(b_out_1, b_in_1, t_in_1, t_out_1);
+        // 상하 단면 쿼드
+        addQuad(b_in_2, b_in_1, b_out_1, b_out_2);
+        addQuad(t_out_2, t_out_1, t_in_1, t_in_2);
+
+        const chunkGeo = new THREE.BufferGeometry();
+        chunkGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        chunkGeo.computeVertexNormals();
+
+        const chunkMesh = new THREE.Mesh(chunkGeo, outerChunkMat.clone());
+        const chunkY = (y0 + y1) / 2;
+        chunkMesh.position.set(0, chunkY, 0);
+
+        const centerPos = new THREE.Vector3(
+          Math.cos(angleMid) * ((rBottom + rTop) / 2),
+          chunkY,
+          Math.sin(angleMid) * ((rBottom + rTop) / 2)
+        );
+
+        chunkMesh.userData = {
+          center: centerPos,
+          outwardNormal: new THREE.Vector3(Math.cos(angleMid), 0.45, Math.sin(angleMid)).normalize(),
+          isDetached: false,
+          hasShatteredInAir: false,
+          shatterTimer: 0.18,
+          velocity: new THREE.Vector3(),
+          rotVel: new THREE.Vector3(),
+          life: 1.0,
+          layer: layer
+        };
+
+        chunkGroup.add(chunkMesh);
+        obeliskChunks.push(chunkMesh);
+      }
+    }
+
+    // 공중에서 2단계로 산산조각 부서지며 기화하는 3D 아이보리 파편(Sub-Shards) 관리
+    const subShardGroup = new THREE.Group();
+    sanctuaryGroup.add(subShardGroup);
+    const activeSubShards = [];
+
+    function shatterChunkInMidAir(chunk) {
+      chunk.visible = false;
+      const shardCount = 10;
+      const worldPos = new THREE.Vector3();
+      chunk.getWorldPosition(worldPos);
+
+      for (let s = 0; s < shardCount; s++) {
+        const sSize = 0.35 + Math.random() * 0.45;
+        const shardGeo = new THREE.DodecahedronGeometry(sSize, 0);
+        const shardMat = new THREE.MeshStandardMaterial({
+          map: ivoryMarbleTex,
+          color: 0xfffaef,
+          emissive: 0x1f1910,
+          roughness: 0.35,
+          transparent: true,
+          opacity: 1.0
+        });
+        const shardMesh = new THREE.Mesh(shardGeo, shardMat);
+        shardMesh.position.copy(worldPos).add(new THREE.Vector3(
+          (Math.random() - 0.5) * 0.8,
+          (Math.random() - 0.5) * 0.8,
+          (Math.random() - 0.5) * 0.8
+        ));
+
+        shardMesh.userData = {
+          velocity: new THREE.Vector3(
+            chunk.userData.velocity.x * 0.55 + (Math.random() - 0.5) * 8.0,
+            Math.random() * 7.5 + 4.5,
+            chunk.userData.velocity.z * 0.55 + (Math.random() - 0.5) * 8.0
+          ),
+          rotVel: new THREE.Vector3(
+            (Math.random() - 0.5) * 12.0,
+            (Math.random() - 0.5) * 12.0,
+            (Math.random() - 0.5) * 12.0
+          ),
+          life: 1.0,
+          maxLife: 1.2 + Math.random() * 0.5
+        };
+
+        subShardGroup.add(shardMesh);
+        activeSubShards.push(shardMesh);
+      }
+    }
+
+    // 피라미디온 꼭대기 (오벨리스크 전체 붕괴 시 분리 추락)
+    const pyramidionHeight = 3.8;
+    const pyramidionGeo = new THREE.ConeGeometry((obeliskTopWidth * Math.SQRT2) / 2, pyramidionHeight, 4);
+    const pyramidionMat = new THREE.MeshStandardMaterial({
+      color: 0xf6e297,
+      roughness: 0.15,
+      metalness: 0.65
+    });
+    const pyramidion = new THREE.Mesh(pyramidionGeo, pyramidionMat);
+    const obeliskTipY = obeliskBaseY + obeliskHeight + pyramidionHeight / 2;
+    pyramidion.position.y = obeliskTipY;
+    pyramidion.rotation.y = Math.PI / 4;
+    pyramidion.userData = {
+      isFalling: false,
+      velocity: new THREE.Vector3(),
+      rotVel: new THREE.Vector3()
+    };
+    sanctuaryGroup.add(pyramidion);
+
+    // 1. 하늘 심연으로 솟구치는 거대 수직 레이저 광선 기둥
+    const laserBeamHeight = 120;
+    const laserBeamGeo = new THREE.CylinderGeometry(0.65, 1.15, laserBeamHeight, 24, 1, true);
+    const laserBeamMat = new THREE.MeshBasicMaterial({
+      color: 0x66d9ff,
+      transparent: true,
+      opacity: 0.85,
+      side: THREE.DoubleSide
+    });
+    const verticalLaserBeam = new THREE.Mesh(laserBeamGeo, laserBeamMat);
+    verticalLaserBeam.position.set(0, obeliskTipY + laserBeamHeight / 2, 0);
+    sanctuaryGroup.add(verticalLaserBeam);
+
+    // 레이저 코어 중심 빔
+    const laserCoreGeo = new THREE.CylinderGeometry(0.22, 0.32, laserBeamHeight, 16, 1, true);
+    const laserCoreMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95,
+      side: THREE.DoubleSide
+    });
+    const laserCore = new THREE.Mesh(laserCoreGeo, laserCoreMat);
+    verticalLaserBeam.add(laserCore);
+
+    // 2. 스크린 영상과 완벽히 일치하는 초고속 회전 에너지 볼텍스 (Vortex Plasma Strands & Particles)
+    const vortexGroup = new THREE.Group();
+    sanctuaryGroup.add(vortexGroup);
+
+    // 3줄기의 휘몰아치는 플라즈마 볼텍스 리본 (더 두꺼워진 오벨리스크를 알맞게 감싸도록 반경 조정)
+    const numStrands = 3;
+    const vortexStrands = [];
+    for (let s = 0; s < numStrands; s++) {
+      const strandPoints = [];
+      const phaseOffset = (s * Math.PI * 2) / numStrands;
+      for (let t = 0; t <= 42; t += 0.4) {
+        const radius = 3.3 + (Math.sin(t * 0.12) * 1.6) + (t * 0.07);
+        strandPoints.push(new THREE.Vector3(
+          Math.cos(t * 1.8 + phaseOffset) * radius,
+          t + 2.0,
+          Math.sin(t * 1.8 + phaseOffset) * radius
+        ));
+      }
+      const curve = new THREE.CatmullRomCurve3(strandPoints);
+      const tubeGeo = new THREE.TubeGeometry(curve, 180, 0.24, 8, false);
+      const tubeMat = new THREE.MeshBasicMaterial({
+        color: s === 0 ? 0x00f7ff : (s === 1 ? 0x7df9ff : 0x00b4d8),
+        transparent: true,
+        opacity: 0.88,
+        wireframe: false
+      });
+      const tubeMesh = new THREE.Mesh(tubeGeo, tubeMat);
+      vortexGroup.add(tubeMesh);
+      vortexStrands.push(tubeMesh);
+    }
+    // 볼텍스 소용돌이를 타고 상승하는 고속 발광 파티클 900개
+    const vortexParticleCount = 900;
+    const vGeo = new THREE.BufferGeometry();
+    const vPos = new Float32Array(vortexParticleCount * 3);
+    const vParticleData = [];
+
+    for (let i = 0; i < vortexParticleCount; i++) {
+      const height = Math.random() * 42;
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 2.8 + (height * 0.10) + (Math.random() - 0.5) * 1.2;
+      vPos[i * 3] = Math.cos(angle) * radius;
+      vPos[i * 3 + 1] = height + 2.0;
+      vPos[i * 3 + 2] = Math.sin(angle) * radius;
+
+      vParticleData.push({
+        height: height,
+        angle: angle,
+        speed: 2.2 + Math.random() * 2.8,
+        radialBase: 2.8 + (Math.random() * 1.4)
+      });
+    }
+    vGeo.setAttribute('position', new THREE.BufferAttribute(vPos, 3));
+    const vMat = new THREE.PointsMaterial({
+      color: 0x90e0ef,
+      size: 0.38,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending
+    });
+    const vortexParticles = new THREE.Points(vGeo, vMat);
+    vortexGroup.add(vortexParticles);
+
+    // 3. 피라미디온 꼭대기 및 주변에서 하늘로 방출되는 절차적 번개(Lightning Bolts)
+    const lightningGroup = new THREE.Group();
+    sanctuaryGroup.add(lightningGroup);
+
+    const lightningBolts = [];
+    const numBolts = 5;
+
+    for (let b = 0; b < numBolts; b++) {
+      const maxPts = 24;
+      const positions = new Float32Array(maxPts * 3);
+      const lGeo = new THREE.BufferGeometry();
+      lGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const lMat = new THREE.LineBasicMaterial({
+        color: 0x99e6ff,
+        linewidth: 2.5,
+        transparent: true,
+        opacity: 0.9
+      });
+      const boltLine = new THREE.Line(lGeo, lMat);
+      lightningGroup.add(boltLine);
+      lightningBolts.push({ line: boltLine, geo: lGeo, count: maxPts });
+    }
+
+    function generateLightning() {
+      lightningBolts.forEach((bolt, idx) => {
+        const pos = bolt.geo.attributes.position.array;
+        let curX = (Math.random() - 0.5) * 1.2;
+        let curY = obeliskTipY - 0.5;
+        let curZ = (Math.random() - 0.5) * 1.2;
+
+        const targetX = (Math.random() - 0.5) * 26;
+        const targetY = obeliskTipY + 28 + Math.random() * 22;
+        const targetZ = (Math.random() - 0.5) * 26;
+
+        pos[0] = curX; pos[1] = curY; pos[2] = curZ;
+
+        for (let i = 1; i < bolt.count; i++) {
+          const progress = i / (bolt.count - 1);
+          curX = THREE.MathUtils.lerp(0, targetX, progress) + (Math.random() - 0.5) * 2.2;
+          curY = THREE.MathUtils.lerp(obeliskTipY, targetY, progress) + (Math.random() - 0.5) * 1.5;
+          curZ = THREE.MathUtils.lerp(0, targetZ, progress) + (Math.random() - 0.5) * 2.2;
+
+          pos[i * 3] = curX;
+          pos[i * 3 + 1] = curY;
+          pos[i * 3 + 2] = curZ;
+        }
+        bolt.geo.attributes.position.needsUpdate = true;
+      });
+    }
+
+    // 판이 회전하는 형태가 아닌, 양다리와 팔을 교차하며 걷는 220명의 순례자 군중
+    const crowdGroup = new THREE.Group();
+    sanctuaryGroup.add(crowdGroup);
+
+    // 오벨리스크의 노란빛 아이보리와 확실히 대비되는 깊고 선명한 천연 직물 톤
+    const pilgrimColors = [
+      0x1e3a8a, // 로열 사파이어 블루
+      0x7f1d1d, // 딥 크림슨 버건디
+      0x047857, // 포레스트 에메랄드 그린
+      0x9a3412, // 테라코타 오렌지 브라운
+      0x334155, // 다크 차콜 슬레이트
+      0x451a03, // 앤틱 딥 브론즈
+      0x2563eb, // 비비드 울트라마린
+      0x6b21a8  // 신성한 딥 퍼플
+    ];
+
+    // 순례자 군중용 공유 지오메트리 및 기본 스킨 재질 정의
+    const headGeo = new THREE.SphereGeometry(0.16, 12, 12);
+    const headMat = new THREE.MeshStandardMaterial({
+      color: 0xc89870,
+      roughness: 0.6
+    });
+    const torsoGeo = new THREE.CylinderGeometry(0.22, 0.28, 0.9, 12);
+    const legGeo = new THREE.CylinderGeometry(0.08, 0.07, 0.7, 8);
+    const armGeo = new THREE.CylinderGeometry(0.065, 0.055, 0.6, 8);
+
+    // 순례자 메쉬 저장 객체
+    const numPilgrims = 220;
+    const pilgrimObjects = [];
+
+    for (let i = 0; i < numPilgrims; i++) {
+      const person = new THREE.Group();
+
+      const color = pilgrimColors[Math.floor(Math.random() * pilgrimColors.length)];
+      const clothMat = new THREE.MeshStandardMaterial({
+        color: color,
+        roughness: 0.75,
+        metalness: 0.05
+      });
+      const skinMat = headMat.clone();
+
+      // 몸통
+      const torso = new THREE.Mesh(torsoGeo, clothMat.clone());
+      torso.position.y = 1.05;
+      torso.castShadow = true;
+      person.add(torso);
+
+      // 머리
+      const head = new THREE.Mesh(headGeo, skinMat);
+      head.position.y = 1.56;
+      person.add(head);
+
+      // 왼다리 & 오른다리 (회전 피벗을 위해 상단 부모 그룹 생성)
+      const leftLegPivot = new THREE.Group();
+      leftLegPivot.position.set(-0.12, 0.72, 0);
+      const leftLeg = new THREE.Mesh(legGeo, clothMat.clone());
+      leftLeg.position.y = -0.34;
+      leftLegPivot.add(leftLeg);
+      person.add(leftLegPivot);
+
+      const rightLegPivot = new THREE.Group();
+      rightLegPivot.position.set(0.12, 0.72, 0);
+      const rightLeg = new THREE.Mesh(legGeo, clothMat.clone());
+      rightLeg.position.y = -0.34;
+      rightLegPivot.add(rightLeg);
+      person.add(rightLegPivot);
+
+      // 왼팔 & 오른팔 피벗
+      const leftArmPivot = new THREE.Group();
+      leftArmPivot.position.set(-0.28, 1.35, 0);
+      const leftArm = new THREE.Mesh(armGeo, clothMat.clone());
+      leftArm.position.y = -0.26;
+      leftArmPivot.add(leftArm);
+      person.add(leftArmPivot);
+
+      const rightArmPivot = new THREE.Group();
+      rightArmPivot.position.set(0.28, 1.35, 0);
+      const rightArm = new THREE.Mesh(armGeo, clothMat.clone());
+      rightArm.position.y = -0.26;
+      rightArmPivot.add(rightArm);
+      person.add(rightArmPivot);
+
+      // 4중 동심원 궤도: 안쪽(0, 1)은 시계 방향, 바깥쪽(2, 3)은 반시계 방향으로 교차 순례
+      const trackLayer = i % 4;
+      const isInner = trackLayer < 2;
+      // direction: -1 (시계 방향 Clockwise), 1 (반시계 방향 Counter-Clockwise)
+      const direction = isInner ? -1 : 1;
+
+      const baseRadius = 5.8 + trackLayer * 3.6 + (Math.random() - 0.5) * 1.2;
+      const startAngle = Math.random() * Math.PI * 2;
+      const walkSpeed = 0.042 + (Math.random() * 0.015);
+
+      person.userData = {
+        radius: baseRadius,
+        angle: startAngle,
+        speed: walkSpeed,
+        direction: direction,
+        strideFreq: 4.8 + Math.random() * 1.6,
+        leftLegPivot: leftLegPivot,
+        rightLegPivot: rightLegPivot,
+        leftArmPivot: leftArmPivot,
+        rightArmPivot: rightArmPivot,
+        torsoMesh: torso,
+        isDying: false,
+        deathTimer: 0
+      };
+
+      crowdGroup.add(person);
+      pilgrimObjects.push(person);
+    }
+
+    // =========================================================================
+    // 돔 중간 치우친 지점: 성소를 바라보는 [제1 관찰자(The First Observer) & 전망 테라스]
+    // =========================================================================
+    const observationDeckGroup = new THREE.Group();
+    observationDeckGroup.position.set(0, 0, 24); // 성소(Z=0)와 스크린/배경 사이의 명당 관람 지점
+    scene.add(observationDeckGroup);
+
+    // 1. 컴팩트한 순백색 원형 스테이지 플랫폼 (직경 약 3.8m, 반경 1.9m)
+    // 기존의 크고 어두운 데크 및 난간(가드레일)을 완전히 제거하고 순백색 대리석 느낌으로 제작
+    const deckRadius = 1.9;
+    const deckBaseGeo = new THREE.CylinderGeometry(deckRadius, deckRadius + 0.15, 0.35, 48);
+    const deckBaseMat = new THREE.MeshStandardMaterial({
+      color: 0xfcfdfa,
+      roughness: 0.18,
+      metalness: 0.1
+    });
+    const deckBase = new THREE.Mesh(deckBaseGeo, deckBaseMat);
+    deckBase.position.y = 0.175;
+    deckBase.receiveShadow = true;
+    observationDeckGroup.add(deckBase);
+
+    // 상판 순백색 대리석 패널
+    const deckTopGeo = new THREE.CircleGeometry(deckRadius, 48);
+    const deckTopMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.12,
+      metalness: 0.05
+    });
+    const deckTop = new THREE.Mesh(deckTopGeo, deckTopMat);
+    deckTop.rotation.x = -Math.PI / 2;
+    deckTop.position.y = 0.355;
+    deckTop.receiveShadow = true;
+    observationDeckGroup.add(deckTop);
+
+    // 스테이지 외곽 얇은 골드 림
+    const deckRimGeo = new THREE.TorusGeometry(deckRadius + 0.02, 0.04, 16, 64);
+    const deckRimMat = new THREE.MeshStandardMaterial({
+      color: 0xe6ca65,
+      metalness: 0.85,
+      roughness: 0.25
+    });
+    const deckRim = new THREE.Mesh(deckRimGeo, deckRimMat);
+    deckRim.rotation.x = Math.PI / 2;
+    deckRim.position.y = 0.355;
+    observationDeckGroup.add(deckRim);
+
+    // 제1 관찰자 전용 집중 조명 (스포트라이트 & 포인트라이트) - 어둡지 않고 선명하게 부각
+    const observerSpot = new THREE.SpotLight(0xfff5e6, 3.8, 14, Math.PI * 0.22, 0.45, 1.2);
+    observerSpot.position.set(0, 5.8, 25);
+    observerSpot.target.position.set(0, 1.0, 24);
+    scene.add(observerSpot);
+    scene.add(observerSpot.target);
+
+    const observerFillLight = new THREE.PointLight(0xffeedd, 1.6, 6);
+    observerFillLight.position.set(0, 2.2, 23.2);
+    scene.add(observerFillLight);
+
+    // 2. 프리미엄 라운지 체어 - 오벨리스크(Z=0)를 정확히 정면 응시 (rotation.y = 0)
+    const chairGroup = new THREE.Group();
+    chairGroup.position.set(0, 0.36, 0); // 스테이지 상판 위
+    chairGroup.rotation.y = 0; // 성소(Z = 0) 방향을 정확히 정면으로 응시 (-Z 방향)
+    observationDeckGroup.add(chairGroup);
+
+    const chairMat = new THREE.MeshStandardMaterial({
+      color: 0x1f2735, // 세련된 다크 차콜 가죽
+      roughness: 0.4,
+      metalness: 0.2
+    });
+    const chairGoldMat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37,
+      metalness: 0.85,
+      roughness: 0.25
+    });
+
+    // 의자 받침 다리 & 축
+    const chairStem = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.42, 16), chairGoldMat);
+    chairStem.position.y = 0.21;
+    chairGroup.add(chairStem);
+
+    const chairFoot = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.38, 0.05, 32), chairGoldMat);
+    chairFoot.position.y = 0.025;
+    chairGroup.add(chairFoot);
+
+    // 의자 좌판 (Seat)
+    const seatMesh = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.12, 0.68), chairMat);
+    seatMesh.position.set(0, 0.48, -0.02);
+    chairGroup.add(seatMesh);
+
+    // 의자 등받이 (Backrest) - 뒤로 살짝 젖힘 (+Z 방향)
+    const backMesh = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.75, 0.12), chairMat);
+    backMesh.position.set(0, 0.88, 0.30);
+    backMesh.rotation.x = 0.16;
+    chairGroup.add(backMesh);
+
+    // 의자 팔걸이 (좌/우)
+    const chairArmGeo = new THREE.BoxGeometry(0.09, 0.06, 0.52);
+    const armL = new THREE.Mesh(chairArmGeo, chairMat);
+    armL.position.set(-0.38, 0.68, 0.02);
+    chairGroup.add(armL);
+
+    const armR = new THREE.Mesh(chairArmGeo, chairMat);
+    armR.position.set(0.38, 0.68, 0.02);
+    chairGroup.add(armR);
+
+    // 3. 실제 성인 남성 형태의 컬러 피규어 [제1 관찰자]
+    const firstObserver = new THREE.Group();
+    firstObserver.position.set(0, 0.36, 0);
+    firstObserver.rotation.y = 0; // 오벨리스크(Z=0)를 정면 응시
+    observationDeckGroup.add(firstObserver);
+
+    // 사실적인 성인 남성 의상 및 피부 재질
+    const jacketMat = new THREE.MeshStandardMaterial({
+      color: 0x223555, // 딥 네이비 캐주얼 블레이저 재킷
+      roughness: 0.65,
+      metalness: 0.05
+    });
+    const shirtMat = new THREE.MeshStandardMaterial({
+      color: 0xf1f3f7, // 화이트 드레스 셔츠
+      roughness: 0.5
+    });
+    const pantsMat = new THREE.MeshStandardMaterial({
+      color: 0x6e6355, // 웜 브라운 슬랙스 팬츠
+      roughness: 0.7
+    });
+    const adultSkinMat = new THREE.MeshStandardMaterial({
+      color: 0xe6b58e, // 건강한 성인 남성 피부톤
+      roughness: 0.55
+    });
+    const hairMat = new THREE.MeshStandardMaterial({
+      color: 0x1f1712, // 짙은 갈색/블랙 헤어
+      roughness: 0.85
+    });
+    const maleShoeMat = new THREE.MeshStandardMaterial({
+      color: 0x2d1a12, // 고급 브라운 가죽 옥스퍼드화
+      roughness: 0.35,
+      metalness: 0.15
+    });
+
+    // 상체 몸통 (셔츠와 재킷 깃 형태)
+    const torsoGroup = new THREE.Group();
+    torsoGroup.position.set(0, 0.82, 0.12);
+    torsoGroup.rotation.x = 0.12; // 등받이에 편안히 기댐
+    firstObserver.add(torsoGroup);
+
+    const foTorso = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.28, 0.64, 16), jacketMat);
+    foTorso.castShadow = true;
+    torsoGroup.add(foTorso);
+
+    // 셔츠 브이넥/타이 포인트
+    const shirtChest = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.36, 0.08), shirtMat);
+    shirtChest.position.set(0, 0.12, -0.13);
+    torsoGroup.add(shirtChest);
+
+    // 목 (Neck)
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 0.14, 12), adultSkinMat);
+    neck.position.set(0, 0.36, -0.02);
+    torsoGroup.add(neck);
+
+    // 머리 (Head) & 이목구비 볼륨감
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.52, -0.02);
+    torsoGroup.add(headGroup);
+
+    const foHead = new THREE.Mesh(new THREE.SphereGeometry(0.16, 20, 20), adultSkinMat);
+    headGroup.add(foHead);
+
+    // 남성 헤어스타일 (헤어 컷 볼륨)
+    const foHair = new THREE.Mesh(new THREE.SphereGeometry(0.168, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.58), hairMat);
+    foHair.position.set(0, 0.02, -0.01);
+    headGroup.add(foHair);
+
+    // 턱과 코 볼륨 (사람 옆모습 및 정면 윤곽 표현)
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.05), adultSkinMat);
+    nose.position.set(0, 0.0, -0.165);
+    headGroup.add(nose);
+
+    // 넓적다리/허벅지 (팬츠 착용, 무릎이 오벨리스크 쪽 -Z 방향을 향함)
+    const thighGeo = new THREE.CylinderGeometry(0.11, 0.10, 0.46, 12);
+    const thighL = new THREE.Mesh(thighGeo, pantsMat);
+    thighL.rotation.x = Math.PI / 2;
+    thighL.position.set(-0.16, 0.58, -0.16);
+    firstObserver.add(thighL);
+
+    const thighR = new THREE.Mesh(thighGeo, pantsMat);
+    thighR.rotation.x = Math.PI / 2;
+    thighR.position.set(0.16, 0.58, -0.16);
+    firstObserver.add(thighR);
+
+    // 종아리/하퇴부 (바닥을 향해 수직 하강)
+    const shinGeo = new THREE.CylinderGeometry(0.09, 0.08, 0.42, 12);
+    const shinL = new THREE.Mesh(shinGeo, pantsMat);
+    shinL.position.set(-0.16, 0.28, -0.38);
+    firstObserver.add(shinL);
+
+    const shinR = new THREE.Mesh(shinGeo, pantsMat);
+    shinR.position.set(0.16, 0.28, -0.38);
+    firstObserver.add(shinR);
+
+    // 구두 (스테이지 바닥 위)
+    const shoeL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 0.24), maleShoeMat);
+    shoeL.position.set(-0.16, 0.06, -0.44);
+    firstObserver.add(shoeL);
+
+    const shoeR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 0.24), maleShoeMat);
+    shoeR.position.set(0.16, 0.06, -0.44);
+    firstObserver.add(shoeR);
+
+    // 양팔 (재킷 슬리브 + 팔걸이 얹음)
+    const armLMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.065, 0.48, 12), jacketMat);
+    armLMesh.position.set(-0.35, 0.72, 0.04);
+    armLMesh.rotation.x = 0.42;
+    firstObserver.add(armLMesh);
+
+    const armRMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.065, 0.48, 12), jacketMat);
+    armRMesh.position.set(0.35, 0.72, 0.04);
+    armRMesh.rotation.x = 0.42;
+    firstObserver.add(armRMesh);
+
+    // 손 (팔걸이 끝에 자연스럽게 놓임)
+    const handL = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 12), adultSkinMat);
+    handL.position.set(-0.35, 0.69, -0.16);
+    firstObserver.add(handL);
+
+    const handR = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 12), adultSkinMat);
+    handR.position.set(0.35, 0.69, -0.16);
+    firstObserver.add(handR);
+
+    // =========================================================================
+    // 4. 슈팅 게임 시스템 (Target Disintegration & Laser Ray FX)
+    // =========================================================================
+    // 오디오 합성 효과음 (외부 URL 종속성 없이 브라우저 Web Audio API로 자가 생성)
+    let audioCtx = null;
+    function playLaserSound() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        // 1. 발사 레이저 피치 다운 신시사이저
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(1100, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.28);
+
+        gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.28);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.28);
+
+        // 2. 타격 충격파 노이즈 사운드
+        const hitOsc = audioCtx.createOscillator();
+        const hitGain = audioCtx.createGain();
+        hitOsc.type = 'triangle';
+        hitOsc.frequency.setValueAtTime(320, audioCtx.currentTime + 0.06);
+        hitOsc.frequency.exponentialRampToValueAtTime(45, audioCtx.currentTime + 0.32);
+        hitGain.gain.setValueAtTime(0.45, audioCtx.currentTime + 0.06);
+        hitGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.32);
+        hitOsc.connect(hitGain);
+        hitGain.connect(audioCtx.destination);
+        hitOsc.start(audioCtx.currentTime + 0.06);
+        hitOsc.stop(audioCtx.currentTime + 0.32);
+      } catch (err) {
+        // 사운드 실패 시 무시
+      }
+    }
+
+    // 슈팅 광선 실린더 빔 그룹 - 밝은 노란색(Bright Yellow)으로 변경
+    const laserRayGeo = new THREE.CylinderGeometry(0.14, 0.14, 1, 14);
+    const laserRayMat = new THREE.MeshBasicMaterial({
+      color: 0xffea00, // 밝은 형광 레몬 옐로우
+      transparent: true,
+      opacity: 0.98
+    });
+    const laserBeamMesh = new THREE.Mesh(laserRayGeo, laserRayMat);
+    laserBeamMesh.visible = false;
+    scene.add(laserBeamMesh);
+
+    // 레이저 코어 순백색 중심선
+    const laserRayCoreGeo = new THREE.CylinderGeometry(0.05, 0.05, 1, 8);
+    const laserRayCoreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const laserCoreMesh = new THREE.Mesh(laserRayCoreGeo, laserRayCoreMat);
+    laserBeamMesh.add(laserCoreMesh);
+
+    // 타깃 암석 파쇄 시 공중으로 날아가며 분해되는 아이보리색 조각 & 스파크 파티클 시스템
+    const explosionParticleCount = 320;
+    const expGeo = new THREE.BufferGeometry();
+    const expPos = new Float32Array(explosionParticleCount * 3);
+    const expVels = [];
+    for (let k = 0; k < explosionParticleCount; k++) {
+      expPos[k * 3] = 0; expPos[k * 3 + 1] = -100; expPos[k * 3 + 2] = 0;
+      expVels.push(new THREE.Vector3(
+        (Math.random() - 0.5) * 18.0,
+        Math.random() * 16.0 + 8.0, // 공중으로 높이 솟구침
+        (Math.random() - 0.5) * 18.0
+      ));
+    }
+    expGeo.setAttribute('position', new THREE.BufferAttribute(expPos, 3));
+    const expMat = new THREE.PointsMaterial({
+      color: 0xfffae8, // 화사한 아이보리 대리석 파편 빛
+      size: 0.52,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending
+    });
+    const explosionParticles = new THREE.Points(expGeo, expMat);
+    scene.add(explosionParticles);
+
+    let laserRayLife = 0;
+    let explosionLife = 0;
+    let cameraShakeIntensity = 0;
+    let destroyedChunkCount = 0;
+    const totalChunks = obeliskChunks.length;
+    const scoreBadge = document.getElementById('score-counter');
+    let isFullyCollapsed = false;
+
+    // 오벨리스크 석재 파편 정밀 폭격 & 공중 비산 분해 함수
+    function shootAtObelisk() {
+      // 아직 분리되지 않은 온전한 오벨리스크 석재 청크 탐색
+      const activeChunks = obeliskChunks.filter(c => !c.userData.isDetached);
+      if (activeChunks.length === 0) return;
+
+      // 무작위로 하나의 석재 블록을 타깃으로 선택
+      const targetChunk = activeChunks[Math.floor(Math.random() * activeChunks.length)];
+
+      // 1. 발사 및 암석 폭음 사운드 재생
+      playLaserSound();
+
+      // 2. 발사 시작점: 제1 관찰자의 오른손 위치
+      const startPos = new THREE.Vector3();
+      handR.getWorldPosition(startPos);
+
+      // 3. 타깃 석재 청크의 중심 월드 좌표
+      const targetPos = targetChunk.userData.center.clone();
+
+      // 4. 노란색 파괴 레이저 빔 정렬 (startPos -> targetPos)
+      const diff = new THREE.Vector3().subVectors(targetPos, startPos);
+      const distance = diff.length();
+
+      laserBeamMesh.position.copy(startPos).addScaledVector(diff, 0.5);
+      laserBeamMesh.scale.set(1, distance, 1);
+      laserBeamMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), diff.clone().normalize());
+      laserBeamMesh.visible = true;
+      laserRayLife = 0.28;
+
+      // 5. 직격 지점: 사람들에게 떨어지지 않고 공중으로 솟구치며 흩어지는 아이보리색 조각들
+      const pArray = explosionParticles.geometry.attributes.position.array;
+      for (let k = 0; k < explosionParticleCount; k++) {
+        pArray[k * 3] = targetPos.x + (Math.random() - 0.5) * 0.8;
+        pArray[k * 3 + 1] = targetPos.y + (Math.random() - 0.5) * 0.8;
+        pArray[k * 3 + 2] = targetPos.z + (Math.random() - 0.5) * 0.8;
+        // 상공 및 외곽으로 높이 비산
+        expVels[k].set(
+          targetChunk.userData.outwardNormal.x * (10 + Math.random() * 12) + (Math.random() - 0.5) * 8,
+          Math.random() * 15 + 10.0, // 하늘로 강하게 솟구침
+          targetChunk.userData.outwardNormal.z * (10 + Math.random() * 12) + (Math.random() - 0.5) * 8
+        );
+      }
+      explosionParticles.geometry.attributes.position.needsUpdate = true;
+      // 타깃 석재 청크: 상공으로 솟구친 후 공중에서 2단계 산산조각 폭발
+      targetChunk.userData.isDetached = true;
+      targetChunk.userData.hasShatteredInAir = false;
+      targetChunk.userData.shatterTimer = 0.18;
+      targetChunk.userData.life = 1.0;
+      targetChunk.userData.velocity.set(
+        targetChunk.userData.outwardNormal.x * (12.0 + Math.random() * 10.0) + (Math.random() - 0.5) * 6,
+        Math.random() * 14.0 + 9.0,
+        targetChunk.userData.outwardNormal.z * (12.0 + Math.random() * 10.0) + (Math.random() - 0.5) * 6
+      );
+      targetChunk.userData.rotVel.set(
+        (Math.random() - 0.5) * 7.5,
+        (Math.random() - 0.5) * 7.5,
+        (Math.random() - 0.5) * 7.5
+      );
+
+      targetChunk.material = brokenEdgeMat.clone();
+
+      // 첫 번째 파편이 떨어져 나가면 비로소 틈새로 내부의 칠흑빛 기둥이 드러남
+      if (!innerBlackPillar.visible) {
+        innerBlackPillar.visible = true;
+      }
+
+      destroyedChunkCount++;
+      const remainingChunks = totalChunks - destroyedChunkCount;
+      const integrityPct = Math.max(0, Math.round((remainingChunks / totalChunks) * 100));
+
+      if (scoreBadge) {
+        scoreBadge.textContent = `내구도: ${integrityPct}% | 파쇄: ${destroyedChunkCount}/${totalChunks}`;
+      }
+
+      // 8. 48개의 아이보리 조각이 전부 뜯겨 나가 가운데 칠흑빛 기둥만 남으면 게임 완료
+      if (destroyedChunkCount >= totalChunks && !isFullyCollapsed) {
+        triggerTotalCollapse();
+      }
+
+      // 제1 관찰자의 발사 반동 제스처
+      armRMesh.rotation.x = -0.32;
+      setTimeout(() => { armRMesh.rotation.x = 0.42; }, 180);
+    }
+
+    // 최종 완전 붕괴 시퀀스 (피라미디온 추락 및 가운데 까만 흑요석 기둥 완전 강림)
+    function triggerTotalCollapse() {
+      isFullyCollapsed = true;
+      pyramidion.userData.isFalling = true;
+      pyramidion.userData.velocity.set((Math.random() - 0.5) * 4.5, 2.5, (Math.random() - 0.5) * 4.5);
+      pyramidion.userData.rotVel.set((Math.random() - 0.5) * 3.0, (Math.random() - 0.5) * 2.0, (Math.random() - 0.5) * 3.0);
+
+      // 수직 레이저 기둥 맥동 감쇠
+      verticalLaserBeam.material.opacity = 0.25;
+      laserCore.material.opacity = 0.3;
+
+      if (scoreBadge) {
+        scoreBadge.innerHTML = '<span class="text-amber-400 font-extrabold animate-pulse">👑 성소 정화 완료! 심연의 흑요석 기둥 완전 강림 (GAME CLEAR)</span>';
+      }
+    }
+
+    // UI 버튼 및 PC 키보드 발사 트리거 연결
+    document.getElementById('manual-shoot-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      shootAtObelisk();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        shootAtObelisk();
+      }
+    });
+
+    // 캔버스 클릭 시에도 발사
+    window.addEventListener('pointerdown', (e) => {
+      // UI 헤더 클릭 시 발사 방지
+      if (e.target.closest('header')) return;
+      shootAtObelisk();
+    });
+
+    // 전방 거대 파노라마 곡면 시네마 스크린 (MP4 영상 투사)
+    const screenCurveRadius = 38;
+    const screenGeo = new THREE.CylinderGeometry(
+      screenCurveRadius, screenCurveRadius, 16, 64, 1, true, -Math.PI * 0.36, Math.PI * 0.72
+    );
+    screenGeo.scale(-1, 1, 1);
+
+    const video = document.getElementById('video-source');
+    let videoTexture = null;
+
+    // 영상 미업로드 시 기본 상영되는 성소 실사풍 캔버스 (3D 공간과 100% 동일한 비주얼 렌더링)
+    const fallbackCanvas = document.createElement('canvas');
+    fallbackCanvas.width = 1280;
+    fallbackCanvas.height = 720;
+    const fbCtx = fallbackCanvas.getContext('2d');
+
+    function updateFallbackCanvas(time) {
+      // 1. 깊은 심연 배경 그라디언트
+      const grad = fbCtx.createLinearGradient(0, 0, 0, 720);
+      grad.addColorStop(0, '#020308');
+      grad.addColorStop(0.5, '#0b1626');
+      grad.addColorStop(1, '#1b2c40');
+      fbCtx.fillStyle = grad;
+      fbCtx.fillRect(0, 0, 1280, 720);
+
+      // 2. 수직으로 하늘을 뚫고 솟구치는 거대 레이저 광선
+      const beamGrad = fbCtx.createLinearGradient(600, 0, 680, 0);
+      beamGrad.addColorStop(0, 'rgba(0, 240, 255, 0)');
+      beamGrad.addColorStop(0.5, 'rgba(180, 250, 255, 0.95)');
+      beamGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+      fbCtx.fillStyle = beamGrad;
+      fbCtx.fillRect(620, 0, 40, 450);
+
+      // 3. 오벨리스크를 감싸며 휘몰아치는 실사풍 에너지 볼텍스(Vortex)
+      fbCtx.lineWidth = 4;
+      for (let s = 0; s < 3; s++) {
+        fbCtx.strokeStyle = s === 0 ? '#00f7ff' : (s === 1 ? '#e0faff' : '#00b4d8');
+        fbCtx.beginPath();
+        for (let y = 140; y <= 560; y += 8) {
+          const progress = (560 - y) / 420;
+          const spread = 24 + progress * 55;
+          const angle = progress * Math.PI * 9 + time * 3.8 + (s * Math.PI * 0.66);
+          const x = 640 + Math.cos(angle) * spread;
+          if (y === 140) fbCtx.moveTo(x, y);
+          else fbCtx.lineTo(x, y);
+        }
+        fbCtx.stroke();
+      }
+
+      // 4. 중앙 하얀 아이보리 대리석 오벨리스크 실사 렌더
+      const obeliskGrad = fbCtx.createLinearGradient(590, 0, 690, 0);
+      obeliskGrad.addColorStop(0, '#e8e0d0');
+      obeliskGrad.addColorStop(0.3, '#ffffff');
+      obeliskGrad.addColorStop(0.85, '#f4ece1');
+      obeliskGrad.addColorStop(1, '#c5baa6');
+      fbCtx.fillStyle = obeliskGrad;
+      fbCtx.beginPath();
+      fbCtx.moveTo(618, 140); fbCtx.lineTo(662, 140);
+      fbCtx.lineTo(686, 565); fbCtx.lineTo(594, 565);
+      fbCtx.closePath();
+      fbCtx.fill();
+
+      // 금빛 피라미디온 꼭대기
+      fbCtx.fillStyle = '#f8df8c';
+      fbCtx.beginPath();
+      fbCtx.moveTo(618, 140); fbCtx.lineTo(640, 90); fbCtx.lineTo(662, 140);
+      fbCtx.closePath();
+      fbCtx.fill();
+
+      // 5. 꼭대기에서 뿜어져 나오는 지그재그 번개 아크
+      fbCtx.strokeStyle = '#cbf3f9';
+      fbCtx.lineWidth = 2.5;
+      for (let b = 0; b < 4; b++) {
+        fbCtx.beginPath();
+        let bx = 640, by = 90;
+        fbCtx.moveTo(bx, by);
+        for (let seg = 0; seg < 6; seg++) {
+          bx += (Math.sin(time * 12 + b * 5 + seg) - 0.2) * 26;
+          by -= 18 + Math.random() * 10;
+          fbCtx.lineTo(bx, by);
+        }
+        fbCtx.stroke();
+      }
+
+      // 6. 안쪽(시계방향)과 바깥쪽(반시계방향)으로 교차 탑돌이 행렬
+      // 안쪽 행렬 (시계 방향: 좌 -> 우)
+      for (let i = 0; i < 22; i++) {
+        const px = ((i * 32 + time * 55) % 360) + 460;
+        const py = 565 + Math.sin(px * 0.05) * 1.5;
+        fbCtx.fillStyle = i % 2 === 0 ? '#ffffff' : '#e6d5be';
+        fbCtx.fillRect(px, py - 18, 7, 20);
+        fbCtx.fillStyle = '#d9a87d';
+        fbCtx.beginPath(); fbCtx.arc(px + 3.5, py - 22, 3.5, 0, Math.PI * 2); fbCtx.fill();
+      }
+      // 바깥쪽 행렬 (반시계 방향: 우 -> 좌)
+      for (let i = 0; i < 30; i++) {
+        const px = 940 - (((i * 28 + time * 48) % 620));
+        const py = 586 + Math.sin(px * 0.05) * 1.5;
+        fbCtx.fillStyle = i % 3 === 0 ? '#1e3a8a' : (i % 2 === 0 ? '#384252' : '#ffffff');
+        fbCtx.fillRect(px, py - 20, 8, 22);
+        fbCtx.fillStyle = '#d9a87d';
+        fbCtx.beginPath(); fbCtx.arc(px + 4, py - 24, 4, 0, Math.PI * 2); fbCtx.fill();
+      }
+
+      // UI 상태 오버레이
+      fbCtx.fillStyle = 'rgba(0,0,0,0.65)';
+      fbCtx.fillRect(30, 30, 520, 52);
+      fbCtx.fillStyle = '#fde047';
+      fbCtx.font = 'bold 18px sans-serif';
+      fbCtx.fillText('🔴 실사 성소 시뮬레이터: 양방향 탑돌이 & 에너지 볼텍스', 46, 62);
+    }
+
+    const fallbackTexture = new THREE.CanvasTexture(fallbackCanvas);
+    const screenMat = new THREE.MeshBasicMaterial({
+      map: fallbackTexture,
+      side: THREE.DoubleSide
+    });
+    const curvedScreen = new THREE.Mesh(screenGeo, screenMat);
+    curvedScreen.position.set(0, 13, -4);
+    curvedScreen.rotation.y = Math.PI;
+    scene.add(curvedScreen);
+
+    // 스크린 외곽 메탈 프레임
+    const frameGeo = new THREE.CylinderGeometry(
+      screenCurveRadius + 0.15, screenCurveRadius + 0.15, 16.4, 64, 1, true, -Math.PI * 0.365, Math.PI * 0.73
+    );
+    frameGeo.scale(-1, 1, 1);
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: 0x1f242d,
+      metalness: 0.85,
+      roughness: 0.3,
+      side: THREE.BackSide
+    });
+    const screenFrame = new THREE.Mesh(frameGeo, frameMat);
+    screenFrame.position.copy(curvedScreen.position);
+    screenFrame.rotation.copy(curvedScreen.rotation);
+    scene.add(screenFrame);
+
+    // 사용자 비디오 파일 업로드 핸들러
+    const videoInput = document.getElementById('video-input');
+    videoInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const fileURL = URL.createObjectURL(file);
+        video.src = fileURL;
+        video.play().then(() => {
+          videoTexture = new THREE.VideoTexture(video);
+          videoTexture.minFilter = THREE.LinearFilter;
+          videoTexture.magFilter = THREE.LinearFilter;
+          videoTexture.format = THREE.RGBAFormat;
+
+          screenMat.map = videoTexture;
+          screenMat.needsUpdate = true;
+
+          // 오벨리스크 본체에도 비디오 전사
+          obeliskBodyMat.map = videoTexture;
+          obeliskBodyMat.needsUpdate = true;
+        }).catch(err => {
+          console.warn('Video auto-play restricted:', err);
+        });
+      }
+    });
+
+    // 곡면 시네마 스크린 ON / OFF 토글 로직
+    const toggleScreenBtn = document.getElementById('toggle-screen-btn');
+    const screenBadge = document.getElementById('screen-status-badge');
+    let isScreenOn = true;
+
+    function setScreenVisibility(visible) {
+      isScreenOn = visible;
+      curvedScreen.visible = isScreenOn;
+      screenFrame.visible = isScreenOn;
+      if (isScreenOn) {
+        screenBadge.innerText = 'ON';
+        screenBadge.className = 'px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/30 text-emerald-300 border border-emerald-500/50';
+      } else {
+        screenBadge.innerText = 'OFF';
+        screenBadge.className = 'px-1.5 py-0.5 rounded text-[10px] bg-rose-500/30 text-rose-300 border border-rose-500/50';
+      }
+    }
+
+    toggleScreenBtn.addEventListener('click', () => {
+      setScreenVisibility(!isScreenOn);
+    });
+
+    // 시점 프리셋 버튼 이벤트
+    document.getElementById('cam-preset-1').addEventListener('click', () => {
+      cameraRig.position.set(0, 4.2, 29); // 제1 관찰자의 바로 뒤 어깨너머 근접 조망
+      cameraRig.rotation.set(0, 0, 0);
+      controls.target.set(0, 8, 0);
+    });
+
+    document.getElementById('cam-preset-2').addEventListener('click', () => {
+      cameraRig.position.set(0, 26, 52); // 돔 고공에서 제1관찰자와 성소 전체를 굽어보는 탑뷰
+      cameraRig.rotation.set(0, 0, 0);
+      controls.target.set(0, 10, 10);
+    });
+
+    // 독립형 WebXR VR 진입 버튼
+    function setupVRButton() {
+      const btn = document.createElement('button');
+      btn.style.position = 'fixed';
+      btn.style.bottom = '24px';
+      btn.style.left = '50%';
+      btn.style.transform = 'translateX(-50%)';
+      btn.style.padding = '14px 32px';
+      btn.style.background = 'linear-gradient(135deg, #d97706, #b45309)';
+      btn.style.color = '#ffffff';
+      btn.style.borderRadius = '9999px';
+      btn.style.boxShadow = '0 10px 30px -5px rgba(217, 119, 6, 0.7)';
+      btn.style.border = '2px solid #fbbf24';
+      btn.style.fontWeight = 'bold';
+      btn.style.fontSize = '15px';
+      btn.style.cursor = 'pointer';
+      btn.style.zIndex = '999';
+      btn.textContent = 'VR 지원 확인 중...';
+
+      if ('xr' in navigator) {
+        let currentSession = null;
+
+        async function onSessionStarted(session) {
+          session.addEventListener('end', () => {
+            currentSession = null;
+            btn.textContent = '🌌 ENTER VR';
+            btn.style.background = 'linear-gradient(135deg, #d97706, #b45309)';
+            // VR 종료 시 제2 관찰자 기준 위치 복귀
+            cameraRig.position.set(0, 6.8, 38);
+            cameraRig.rotation.set(0, 0, 0);
+          });
+
+          await renderer.xr.setSession(session);
+          btn.textContent = 'VR 모드 종료';
+          btn.style.background = '#4b5563';
+          currentSession = session;
+
+          // VR 진입 시 제1 관찰자와 성소 정경이 함께 시원하게 보이는 메타 관람 위치 고정
+          cameraRig.position.set(0, 6.8, 38);
+          cameraRig.rotation.set(0, 0, 0);
+        }
+
+        navigator.xr.isSessionSupported('immersive-vr').then(supported => {
+          if (supported) {
+            btn.textContent = '🌌 ENTER VR';
+            btn.onclick = () => {
+              if (!currentSession) {
+                navigator.xr.requestSession('immersive-vr', {
+                  optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking']
+                }).then(onSessionStarted);
+              } else {
+                currentSession.end();
+              }
+            };
+          } else {
+            btn.textContent = '3D 뷰어 모드 (VR 미지원 기기)';
+            btn.style.opacity = '0.75';
+          }
+        }).catch(() => {
+          btn.textContent = '3D 뷰어 모드';
+          btn.style.opacity = '0.75';
+        });
+      } else {
+        btn.textContent = 'WebXR 미지원 환경';
+        btn.style.opacity = '0.75';
+      }
+
+      document.body.appendChild(btn);
+    }
+    setupVRButton();
+
+    // VR 컨트롤러 썸스틱(Thumbstick / Joystick) 및 키보드 이동 처리
+    const keysPressed = {};
+    window.addEventListener('keydown', (e) => { keysPressed[e.code] = true; });
+    window.addEventListener('keyup', (e) => { keysPressed[e.code] = false; });
+
+    // VR 컨트롤러 트리거 당김 상태 저장 (연속 발사 디바운스)
+    let leftTriggerPressed = false;
+    let rightTriggerPressed = false;
+
+    function handleLocomotion(delta) {
+      let moveForward = 0;
+      let moveRight = 0;
+      let rotateYaw = 0;
+
+      // 1. VR 컨트롤러 썸스틱 입력 감지 및 트리거 슈팅 연동
+      const session = renderer.xr.getSession();
+      if (session) {
+        for (const source of session.inputSources) {
+          if (source && source.gamepad) {
+            const axes = source.gamepad.axes;
+            const buttons = source.gamepad.buttons;
+
+            // 트리거(인덱스 트리거 buttons[0]) 당김 감지 -> 오벨리스크 정밀 파쇄 사격
+            const isTriggerDown = buttons[0] && buttons[0].pressed;
+            if (source.handedness === 'left') {
+              if (isTriggerDown && !leftTriggerPressed) {
+                shootAtObelisk();
+                leftTriggerPressed = true;
+              } else if (!isTriggerDown) {
+                leftTriggerPressed = false;
+              }
+            } else if (source.handedness === 'right') {
+              if (isTriggerDown && !rightTriggerPressed) {
+                shootAtObelisk();
+                rightTriggerPressed = true;
+              } else if (!isTriggerDown) {
+                rightTriggerPressed = false;
+              }
+            } else {
+              // 단일 컨트롤러
+              if (isTriggerDown && !rightTriggerPressed) {
+                shootAtObelisk();
+                rightTriggerPressed = true;
+              } else if (!isTriggerDown) {
+                rightTriggerPressed = false;
+              }
+            }
+
+            // axes[2], axes[3] 또는 axes[0], axes[1] 썸스틱 매핑
+            const x = Math.abs(axes[2]) > 0.15 ? axes[2] : (Math.abs(axes[0]) > 0.15 ? axes[0] : 0);
+            const y = Math.abs(axes[3]) > 0.15 ? axes[3] : (Math.abs(axes[1]) > 0.15 ? axes[1] : 0);
+
+            if (source.handedness === 'left') {
+              // 왼손 썸스틱: 앞/뒤 밀어 근접/원경(전진/후진) 및 좌/우 횡이동
+              moveForward -= y;
+              moveRight += x;
+            } else if (source.handedness === 'right') {
+              // 오른손 썸스틱: 좌/우 회전(선회 시점) 및 상/하 고도 조절(높이 승강)
+              rotateYaw -= x;
+              cameraRig.position.y += -y * delta * 7.5; // 상하 고도 조절
+            } else {
+              // 단일 컨트롤러 모드
+              moveForward -= y;
+              rotateYaw -= x;
+            }
+          }
+        }
+      }
+
+      // 2. 키보드 입력 병행 (W, S, A, D, Q, E, R, F, 방향키)
+      if (keysPressed['KeyW'] || keysPressed['ArrowUp']) moveForward += 1;
+      if (keysPressed['KeyS'] || keysPressed['ArrowDown']) moveForward -= 1;
+      if (keysPressed['KeyA']) moveRight -= 1;
+      if (keysPressed['KeyD']) moveRight += 1;
+      if (keysPressed['ArrowLeft'] || keysPressed['KeyQ']) rotateYaw += 1;
+      if (keysPressed['ArrowRight'] || keysPressed['KeyE']) rotateYaw -= 1;
+      if (keysPressed['KeyR']) cameraRig.position.y += delta * 7.0;
+      if (keysPressed['KeyF']) cameraRig.position.y = Math.max(1.4, cameraRig.position.y - delta * 7.0);
+
+      // 회전 적용
+      if (rotateYaw !== 0) {
+        cameraRig.rotation.y += rotateYaw * delta * 1.6;
+      }
+
+      // 전진/후진 및 횡이동 벡터 적용 (근접 & 원경 이동)
+      if (moveForward !== 0 || moveRight !== 0) {
+        const moveSpeed = 12.0 * delta;
+        const forwardVector = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraRig.rotation.y);
+        const rightVector = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraRig.rotation.y);
+
+        cameraRig.position.addScaledVector(forwardVector, moveForward * moveSpeed);
+        cameraRig.position.addScaledVector(rightVector, moveRight * moveSpeed);
+
+        // 높이 최솟값 제한 (바닥 뚫림 방지)
+        cameraRig.position.y = Math.max(1.4, cameraRig.position.y);
+      }
+    }
+
+    const clock = new THREE.Clock();
+    let lightningTimer = 0;
+
+    renderer.setAnimationLoop(() => {
+      const delta = Math.min(clock.getDelta(), 0.1);
+      const elapsed = clock.getElapsedTime();
+
+      // 1. VR 썸스틱 & 조작 이동 갱신
+      handleLocomotion(delta);
+
+      // 피격 시 카메라 지진 흔들림 효과 감쇠
+      if (cameraShakeIntensity > 0.001) {
+        camera.position.x = (Math.random() - 0.5) * cameraShakeIntensity;
+        camera.position.y = (Math.random() - 0.5) * cameraShakeIntensity;
+        cameraShakeIntensity *= 0.90;
+      } else {
+        camera.position.set(0, 0, 0);
+      }
+
+      // 제1 관찰자의 호흡 모션
+      headGroup.rotation.x = 0.18 + Math.sin(elapsed * 1.5) * 0.03;
+      headGroup.rotation.y = Math.sin(elapsed * 0.8) * 0.06;
+      torsoGroup.position.y = 0.82 + Math.sin(elapsed * 2.0) * 0.008;
+
+      // 슈팅 레이저 빔 수명 갱신
+      if (laserRayLife > 0) {
+        laserRayLife -= delta;
+        laserRayMat.opacity = Math.max(0, laserRayLife / 0.28);
+        if (laserRayLife <= 0) {
+          laserBeamMesh.visible = false;
+        }
+      }
+
+      // 파쇄 스파크 파티클 갱신
+      if (explosionLife > 0) {
+        explosionLife -= delta;
+        expMat.opacity = Math.max(0, explosionLife / 1.3);
+        const pArray = explosionParticles.geometry.attributes.position.array;
+        for (let k = 0; k < explosionParticleCount; k++) {
+          pArray[k * 3] += expVels[k].x * delta;
+          pArray[k * 3 + 1] += expVels[k].y * delta;
+          pArray[k * 3 + 2] += expVels[k].z * delta;
+          expVels[k].y += 1.8 * delta; // 중력 낙하 대신 상승 기류를 타고 공중으로 부유
+        }
+        explosionParticles.geometry.attributes.position.needsUpdate = true;
+      }
+
+      // 2. 떨어져 나온 오벨리스크 석재 파편: 공중 비산 후 산산조각 부서지며 공중에서 기화/소멸
+      for (let i = 0; i < obeliskChunks.length; i++) {
+        const chunk = obeliskChunks[i];
+        if (chunk.userData.isDetached && !chunk.userData.hasShatteredInAir) {
+          chunk.position.addScaledVector(chunk.userData.velocity, delta);
+          chunk.rotation.x += chunk.userData.rotVel.x * delta;
+          chunk.rotation.y += chunk.userData.rotVel.y * delta;
+          chunk.rotation.z += chunk.userData.rotVel.z * delta;
+
+          chunk.userData.shatterTimer -= delta;
+          if (chunk.userData.shatterTimer <= 0) {
+            chunk.userData.hasShatteredInAir = true;
+            shatterChunkInMidAir(chunk);
+          }
+        }
+      }
+
+      // 공중에서 산산조각 난 3D 아이보리 조각들(Sub-Shards)의 비산 및 공중 소멸(Dissolution)
+      for (let j = activeSubShards.length - 1; j >= 0; j--) {
+        const shard = activeSubShards[j];
+        shard.userData.life -= delta / shard.userData.maxLife;
+
+        if (shard.userData.life > 0) {
+          shard.position.addScaledVector(shard.userData.velocity, delta);
+          shard.userData.velocity.y += 1.2 * delta; // 상승 기류 부유
+          shard.rotation.x += shard.userData.rotVel.x * delta;
+          shard.rotation.y += shard.userData.rotVel.y * delta;
+          shard.rotation.z += shard.userData.rotVel.z * delta;
+
+          const currentScale = Math.max(0.01, shard.userData.life);
+          shard.scale.set(currentScale, currentScale, currentScale);
+          shard.material.opacity = currentScale;
+        } else {
+          subShardGroup.remove(shard);
+          shard.geometry.dispose();
+          shard.material.dispose();
+          activeSubShards.splice(j, 1);
+        }
+      }
+
+      // 3. 비디오 텍스처 업데이트
+      if (!video.src || video.paused) {
+        updateFallbackCanvas(elapsed);
+        fallbackTexture.needsUpdate = true;
+      }
+
+      // 4. 순례자들의 사실적인 양방향 탑돌이(안쪽: 시계, 바깥쪽: 반시계) 보행 지속
+      for (let i = 0; i < pilgrimObjects.length; i++) {
+        const p = pilgrimObjects[i];
+        const dir = p.userData.direction;
+
+        p.userData.angle += dir * p.userData.speed * 0.024;
+        const curR = p.userData.radius;
+        const ang = p.userData.angle;
+
+        p.position.x = Math.cos(ang) * curR;
+        p.position.z = Math.sin(ang) * curR;
+        p.position.y = 0.8;
+
+        p.rotation.y = (dir === 1) ? (-ang - Math.PI / 2) : (-ang + Math.PI / 2);
+
+        const walkCycle = Math.sin(elapsed * p.userData.strideFreq);
+        p.userData.leftLegPivot.rotation.x = walkCycle * 0.58;
+        p.userData.rightLegPivot.rotation.x = -walkCycle * 0.58;
+        p.userData.leftArmPivot.rotation.x = -walkCycle * 0.45;
+        p.userData.rightArmPivot.rotation.x = walkCycle * 0.45;
+      }
+
+      // 5. 고속 에너지 볼텍스(Vortex) 소용돌이 및 파티클 상승
+      vortexGroup.rotation.y = elapsed * 2.8;
+
+      const vPositions = vortexParticles.geometry.attributes.position.array;
+      for (let i = 0; i < vortexParticleCount; i++) {
+        const pData = vParticleData[i];
+        pData.height += delta * pData.speed * 8.0;
+        pData.angle += delta * 4.2;
+
+        if (pData.height > 38) {
+          pData.height = 0;
+        }
+
+        const currentR = pData.radialBase + (pData.height * 0.14);
+        vPositions[i * 3] = Math.cos(pData.angle) * currentR;
+        vPositions[i * 3 + 1] = pData.height + 2.0;
+        vPositions[i * 3 + 2] = Math.sin(pData.angle) * currentR;
+      }
+      vortexParticles.geometry.attributes.position.needsUpdate = true;
+
+      // 6. 수직 레이저 기둥 맥동 & 번개 아크
+      const laserPulse = 1.0 + Math.sin(elapsed * 6.0) * 0.15;
+      verticalLaserBeam.scale.set(laserPulse, 1.0, laserPulse);
+
+      lightningTimer += delta;
+      if (lightningTimer > 0.07) {
+        generateLightning();
+        lightningTimer = 0;
+      }
+
+      // 7. 비-VR 환경 OrbitControls
+      if (!renderer.xr.isPresenting) {
+        controls.update();
+      }
+
+      renderer.render(scene, camera);
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
